@@ -2,26 +2,41 @@
 
 int Calculator::solve(string& input)
 {
-    size_t ones_count = 0;
+
     auto literals = this->find_literals(input);
+
     vector<int> bits(literals.size(),0);
-    map<char, int> values;
+
+    map<char, int> values = { {'1',1},{'0',0} };
+
     size_t count = pow(2, bits.size());
+
+    bool find_one = false, find_zero = false;
+
+    int answer = 0;
     for (auto a : literals)
         cout << a << "   ";
     cout << '\n';
     for (size_t i = 0; i < count; i++)
     {
+        if (find_one && find_zero)
+            return 1;
         for (int j = 0; j < bits.size(); j++)
             values[literals[j]] = bits[j];
         for (auto a : bits)
             cout << a << "   ";
-        cout << this->calculate(input, values);
-        cout << '\n';
+        answer = this->calculate(input, values);
+        cout << answer << endl;
+
+        if (answer)
+            find_one = true;
+        else
+            find_zero = true;
         this->add_one(bits);
-        ones_count += this->calculate(input, values);
     }
-    return ones_count;
+    if (find_one && find_zero)
+        return 1;
+    return 0;
 }
 
 vector<char> Calculator::find_literals(string& input)
@@ -111,6 +126,6 @@ int Calculator::calculate(string& rpn, map<char, int>& values)
         }
         reserve.push(values.at(chr));
     }
-    return second;
+    return second!=-1 ? second:first;
 }
 
