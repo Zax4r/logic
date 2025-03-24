@@ -38,7 +38,12 @@ void RPN::create_RPN(string& input)
 		{
 			this->rpn += input[i];
 		}
-			
+		
+		if (LOGIC_CONSTS.find(input[i]) != string::npos)
+		{
+			this->rpn += input[i];
+		}
+
 		for (auto val : this->unary)
 		{
 			if (val == 0)
