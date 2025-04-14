@@ -70,13 +70,15 @@ int Calculator::calculate(string& rpn, map<char, int>& values)
     stack<int> reserve;
     for (auto chr : rpn)
     {
+        if (LITERALS.find(chr) != string::npos)
+            reserve.push(values.at(chr));
+
         if (BINARY_OPERANDS.find(chr) != string::npos)
         {
-            if (first == -1)
-            {
-                first = reserve.top();
-                reserve.pop();
-            }
+            second = reserve.top();
+            reserve.pop();
+            first = reserve.top();
+            reserve.pop();
 
             switch (chr)
             {
@@ -101,31 +103,21 @@ int Calculator::calculate(string& rpn, map<char, int>& values)
                 break;
             }
             }
+            reserve.push(second);
+            second = -1;
             first = -1;
             continue;
         }
 
         if (UNARY_OPERANDS.find(chr) != string::npos)
         {
-            if (second == -1)
-                first = first ? 0:1;
-            else
-                second = second ? 0 : 1;
+            auto val = reserve.top();
+            reserve.pop();
+            val = (val + 1) % 2;
+            reserve.push(val);
             continue;
         }
-
-        if (first == -1)
-        {
-            first = values.at(chr);
-            continue;
-        }
-        if (second == -1)
-        {
-            second = values.at(chr);
-            continue;
-        }
-        reserve.push(values.at(chr));
     }
-    return second!=-1 ? second:first;
+    return reserve.top();
 }
 

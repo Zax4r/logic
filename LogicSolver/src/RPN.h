@@ -11,6 +11,7 @@ private:
 	vector<int> unary;
 	stack<char> stack_operands;
 	bool validate(string& input);
+	string change(string& input);
 public:
 	RPN()
 	{

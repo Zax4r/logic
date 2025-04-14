@@ -19,6 +19,8 @@ const string UNARY_OPERANDS = "!";
 const string BINARY_OPERANDS = "&|>~";
 const string LITERALS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const string LOGIC_CONSTS = "01";
+const string ALL_OPERANDS = "!&|>~";
+const string ARGUMENTS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ01";
 const char OPEN_BRACKET = '(';
 const char CLOSE_BRACKET = ')';
 

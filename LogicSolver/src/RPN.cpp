@@ -2,36 +2,77 @@
 
 bool RPN::validate(string& input)
 {
-	int bracket_counter = 0;
+	int open_bracket_counter = 0;
+	int close_bracket_counter = 0;
+	int operands_count = 0;
+	int binary_operands = 0;
+	int arguments = 0;
 	for (int i = 0; i < input.length(); i++)
 	{
-		if (input[i] == OPEN_BRACKET)
-			bracket_counter++;
-		if (input[i] == CLOSE_BRACKET && bracket_counter == 0)
+		if (ALL_OPERANDS.find(input[i]) != string::npos)
+		{
+			operands_count++;
+			if (BINARY_OPERANDS.find(input[i]) != string::npos)
+				binary_operands++;
+		}
+		else
+			if (ARGUMENTS.find(input[i]) != string::npos)
+				arguments++;
+			else
+				if (input[i] == OPEN_BRACKET)
+					open_bracket_counter++;
+				else
+					if (input[i] == CLOSE_BRACKET)
+						close_bracket_counter++;
+					else return false;
+
+		if (operands_count > open_bracket_counter)
 			return false;
-		if (input[i] == CLOSE_BRACKET && bracket_counter)
-			bracket_counter--;
+
+		if (close_bracket_counter > open_bracket_counter)
+			return false;
+
+		if (arguments - 2 >= binary_operands)
+			return false;
 	}
+	if (open_bracket_counter != close_bracket_counter)
+		return false;
+	if (open_bracket_counter != operands_count)
+		return false;
 	return true;
+}
+
+string RPN::change(string& input)
+{
+	while (true)
+	{
+		auto pos3 = input.find("/\\");
+		auto pos2 = input.find("\\/");
+		auto pos = input.find("-");
+		if (pos != string::npos)
+		{
+			input.replace(pos, 1, "");
+		}
+		else
+			if (pos2 != string::npos)
+			{
+				input.replace(pos2, 2, "|");
+			}
+				else if (pos3 != string::npos) {
+					input.replace(pos3, 2, "&");
+				}
+				else return input;
+	}
 }
 
 void RPN::create_RPN(string& input)
 {
+	input = this->change(input);
 	if (!(this->validate(input)))
 	{
 		cout << "Неправильная строка";
 		return;
 	}
-	while (true)
-	{
-		auto pos = input.find("-");
-		if (pos == string::npos)
-		{
-			break;
-		}
-		input.replace(pos,1,"");
-	}
-
 	for (int i=0;i<input.length();i++)
 	{
 		if (LITERALS.find(input[i]) != string::npos)
