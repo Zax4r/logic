@@ -218,42 +218,51 @@ string create_RPN(string& input)//creates a RPN from original input
     string rpn;
     vector<int> unary;
 
-    for (char c : input) {
-        if (ARGUMENTS.count(c)) {
-            rpn += c;
+    for (int i=0;i<input.length();i++) {
+        if (ARGUMENTS.count(input[i])) {
+            rpn += input[i];
             continue;
         }
 
-        if (c == UNARY_OPERANDS) {
+        if (input[i] == UNARY_OPERANDS) {
 			int brackets = 0;
-			auto pos = &c - &input[0];
-			for (int j = pos + 1; j < input.size() && input[j] == OPEN_BRACKET; j++) {
-				brackets++;
+			for (int j = i+1 ;j<input.length();j++) 
+			{
+				if (input[j] == OPEN_BRACKET)
+					brackets++;
+				else break;
 			}
 			unary.push_back(brackets);
 			continue;
 		}
-        if (BINARY_OPERANDS.count(c)) {
-            while (!ops.empty() && PRIORITY.at(c) < PRIORITY.at(ops.top())) {
+        if (BINARY_OPERANDS.count(input[i])) {
+            while (!ops.empty() && PRIORITY.at(input[i]) < PRIORITY.at(ops.top())) {
                 rpn += ops.top();
                 ops.pop();
             }
-            ops.push(c);
+            ops.push(input[i]);
             continue;
         }
 
-        if (c == OPEN_BRACKET) {
-            ops.push(c);
+        if (input[i] == OPEN_BRACKET) {
+            ops.push(input[i]);
             continue;
         }
 
-        if (c == CLOSE_BRACKET) {
+        if (input[i] == CLOSE_BRACKET) {
             while (ops.top() != OPEN_BRACKET) {
                 rpn += ops.top();
                 ops.pop();
             }
             ops.pop();
-            for (auto& cnt : unary) cnt--;
+            for (int i=0;i<unary.size();i++)
+			{
+				if (unary[i]-- == 0)
+				{
+					rpn += '!';
+					unary.erase(unary.begin()+i);
+				}
+			}
         }
     }
 
@@ -262,8 +271,26 @@ string create_RPN(string& input)//creates a RPN from original input
         ops.pop();
     }
 
-    rpn += string(unary.size(),'!');
+	if (unary.size()%2)
+		rpn += "!";
     return rpn;
+}
+
+void TestUser()
+{	
+	vector<char> answers = {'1','2','1','1','2'};
+	vector<string> formulas = {"(A/\\A)","(A->A)","B","(!(A~B))","((A/\\(B/\\C))/\\(!A))"};
+	for (int i =0;i<answers.size();i++)
+	{
+	string answer = " ";
+	cout << "Принадлежит ли данная формула классу нейтральных?" << endl << formulas[i] << endl;
+	cout <<"1.Да\t"  << "2.Нет" << endl;
+	getline(cin,answer);
+	if (answer[0] == answers[i])
+		cout <<"Правильно!!!!!!" << endl;
+	else 
+		cout<< "Неправильно!!!!!" << endl;
+	}
 }
 
 int main()
@@ -295,5 +322,6 @@ int main()
 				cout << "Формула НЕ является нейтральной\n" << endl;
 			}
 		}
+	TestUser();
    return 0;
 }
