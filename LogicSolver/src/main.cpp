@@ -22,6 +22,7 @@
 #include <cmath>
 #include <set>
 #include <unordered_set>
+#include <chrono>
 
 using namespace std;
 
@@ -51,22 +52,20 @@ const map<char, int> PRIORITY = {
 vector<char> find_literals(string& input) //finds all the literals
 {
 	set<char> res;
-	for (auto chr : input)
-		if (LITERALS.count(chr) != string::npos)
-			res.insert(chr);
-	vector<char> res_v;
-	res_v.reserve(res.size());
-	for (auto i : res)
-		res_v.push_back(i);
-	return res_v;
+	for (int i=0;i<input.length();i++)
+		if (LITERALS.count(input[i]))
+			res.insert(input[i]);
+	return vector<char>(res.begin(), res.end());
 }
 
 int calculate(string& rpn, map<char, int>& values) //calculates the rpn using logic
 {
 	stack<int> eval_stack;
     int right,left,result;
-	for (char token : rpn)
+	char token;
+	for (int i=0;i<rpn.length();i++)
 	{
+		token = rpn[i];
 		if (LITERALS.count(token)) {
 			eval_stack.push(values.at(token));
 		}
@@ -113,7 +112,7 @@ int solve(string& input) // solve the task for input
 	for (size_t i = 0; i < count; i++)
 	{
 		if (find_one && find_zero)
-			return 1;
+			return find_one && find_zero;
 
 		for (int j = 0; j < literals.size(); j++)
 			values[literals[j]] = (i >> (literals.size() - 1 - j)) & 1;
@@ -124,9 +123,7 @@ int solve(string& input) // solve the task for input
 		else
 			find_zero = true;
 	}
-	if (find_one && find_zero)
-		return 1;
-	return 0;
+	return find_one && find_zero;
 }
 
 
@@ -137,17 +134,13 @@ bool validate(string& input) // validates the formula
     
     int open = 0, close = 0, ops = 0, bin_ops = 0, args = 0;
     
-    for (char c : input) {
-        if (ALL_OPERANDS.count(c)) {
-            ops++;
-            if (c != UNARY_OPERANDS) bin_ops++;
-        }
-        else if (ARGUMENTS.count(c)) args++;
-        else if (c == OPEN_BRACKET) open++;
-        else if (c == CLOSE_BRACKET) close++;
-        else 
-            return false;
-
+    for (int i=0;i<input.length();i++) {
+		char c = input[i];
+		ops+= int(ALL_OPERANDS.count(c));
+		bin_ops+= int (c!=UNARY_OPERANDS);
+		args+= int(ARGUMENTS.count(c));
+		open+= int(c == OPEN_BRACKET);
+		close+= int(c == CLOSE_BRACKET);
         if (ops > open || close > open || args - bin_ops > 1) 
             return false;
     }
@@ -164,17 +157,13 @@ bool validate2(string& input) // this func checks all subformulas in the input
 			int open_brc = 0;
 			for (int j = i; j < input.length(); j++)
 			{
-				if (input[j] == OPEN_BRACKET)
-					open_brc++;
+				open_brc+= int(input[j] == OPEN_BRACKET);
 				temp += input[j];
-				if (input[j] == CLOSE_BRACKET)
-					open_brc--;
+				open_brc-= int(input[j] == CLOSE_BRACKET);
 				if (open_brc == 0)
 					break;
 			}
-			if (!validate(temp))
-				return false;
-            if ((temp.length() != input.length()) && !validate2(temp)) // save from (((A/\B)/\(C/\D)/\(E/\F)))
+            if ((temp.length() != input.length()) && !validate2(temp) || (!validate(temp))) // save from (((A/\B)/\(C/\D)/\(E/\F)))
                 return false;
 		}
 	}
@@ -184,97 +173,202 @@ bool validate2(string& input) // this func checks all subformulas in the input
 bool validate_unchanged(string& input)
 {
 	for (int i = 0; i < input.length(); i++)
-	{
-		switch (input[i])
-		{
-		case('&'):
-		case('|'):
-		case('<'):
+		if (input[i] == '&' || input[i]=='|' || input[i]=='<')
 			return false;
-		}
-	}
 	return true;
 }
 
 string change(string input)
 {
-	size_t pos;
+	int pos;
 	while ((pos = input.find("->")) != string::npos)
 		input.replace(pos, 2, "<");
-	while ((pos = input.find("\\/")) != string::npos)
+	while ((pos = input.find("\\/")	) != string::npos)
 		input.replace(pos, 2, "|");
 	while ((pos = input.find("/\\")) != string::npos)
 		input.replace(pos, 2, "&");
 	return input;
 }
 
-string create_RPN(string& input)//creates a RPN from original input
- {
-    if (!validate_unchanged(input)) return "";
+bool validate_input(string& input) {
+    if (!validate_unchanged(input)) return false;
     input = change(input);
-    if (!validate2(input)) return "";
+    return validate2(input);
+}
 
-    stack<char> ops;
-    string rpn;
-    vector<int> unary;
+bool handle_argument(char c, string& rpn) {
+    if (ARGUMENTS.count(c)) {
+        rpn += c;
+        return true;
+    }
+    return false;
+}
 
-    for (int i=0;i<input.length();i++) {
-        if (ARGUMENTS.count(input[i])) {
-            rpn += input[i];
-            continue;
-        }
-
-        if (input[i] == UNARY_OPERANDS) {
-			int brackets = 0;
-			for (int j = i+1 ;j<input.length();j++) 
-			{
-				if (input[j] == OPEN_BRACKET)
-					brackets++;
-				else break;
-			}
-			unary.push_back(brackets);
-			continue;
-		}
-        if (BINARY_OPERANDS.count(input[i])) {
-            while (!ops.empty() && PRIORITY.at(input[i]) < PRIORITY.at(ops.top())) {
-                rpn += ops.top();
-                ops.pop();
-            }
-            ops.push(input[i]);
-            continue;
-        }
-
-        if (input[i] == OPEN_BRACKET) {
-            ops.push(input[i]);
-            continue;
-        }
-
-        if (input[i] == CLOSE_BRACKET) {
-            while (ops.top() != OPEN_BRACKET) {
-                rpn += ops.top();
-                ops.pop();
-            }
-            ops.pop();
-            for (int i=0;i<unary.size();i++)
-			{
-				if (unary[i]-- == 0)
-				{
-					rpn += '!';
-					unary.erase(unary.begin()+i);
-				}
-			}
+void process_unary_after_bracket(vector<int>& unary, string& rpn) {
+    for (int i = 0; i < unary.size(); i++) {
+        if (unary[i]-- == 0) {
+            rpn += '!';
+            unary.erase(unary.begin()+i);
+            i--; // компенсируем удаление элемента
         }
     }
+}
 
+int count_leading_brackets(const string& input, int start) {
+    int brackets = 0;
+    for (int j = start; j < input.length(); j++) {
+        if (input[j] == OPEN_BRACKET)
+            brackets++;
+        else break;
+    }
+    return brackets;
+}
+
+bool handle_unary_operand(char c, int i, string& input, vector<int>& unary) {
+    if (c == UNARY_OPERANDS) {
+        int brackets = count_leading_brackets(input, i+1);
+        unary.push_back(brackets);
+        return true;
+    }
+    return false;
+}
+
+bool handle_binary_operand(char c, stack<char>& ops, string& rpn) {
+    if (BINARY_OPERANDS.count(c)) {
+        while (!ops.empty() && PRIORITY.at(c) < PRIORITY.at(ops.top())) {
+            rpn += ops.top();
+            ops.pop();
+        }
+        ops.push(c);
+        return true;
+    }
+    return false;
+}
+
+bool handle_open_bracket(char c, stack<char>& ops) {
+    if (c == OPEN_BRACKET) {
+        ops.push(c);
+        return true;
+    }
+    return false;
+}
+
+bool handle_close_bracket(char c, stack<char>& ops, string& rpn, vector<int>& unary) {
+    if (c == CLOSE_BRACKET) {
+        while (ops.top() != OPEN_BRACKET) {
+            rpn += ops.top();
+            ops.pop();
+        }
+        ops.pop();
+        process_unary_after_bracket(unary, rpn);
+        return true;
+    }
+    return false;
+}
+
+void process_remaining_operators(stack<char>& ops, string& rpn) {
     while (!ops.empty()) {
         rpn += ops.top();
         ops.pop();
     }
+}
 
-	if (unary.size()%2)
-		rpn += "!";
+void process_remaining_unary(vector<int>& unary, string& rpn) {
+    if (unary.size() % 2)
+        rpn += "!";
+}
+
+string create_RPN(string& input) {
+    if (!validate_input(input)) return "";
+    
+    stack<char> ops;
+    string rpn;
+    vector<int> unary;
+
+    for (int i = 0; i < input.length(); i++) {
+        char c = input[i];
+        
+        if (handle_argument(c, rpn)) continue;
+        if (handle_unary_operand(c, i, input, unary)) continue;
+        if (handle_binary_operand(c, ops, rpn)) continue;
+        if (handle_open_bracket(c, ops)) continue;
+        if (handle_close_bracket(c, ops, rpn, unary)) continue;
+    }
+
+    process_remaining_operators(ops, rpn);
+    process_remaining_unary(unary, rpn);
+    
     return rpn;
 }
+
+
+// string create_RPN(string& input)//creates a RPN from original input
+//  {
+//     if (!validate_unchanged(input)) return "";
+//     input = change(input);
+//     if (!validate2(input)) return "";
+
+//     stack<char> ops;
+//     string rpn;
+//     vector<int> unary;
+
+//     for (int i=0;i<input.length();i++) {
+//         if (ARGUMENTS.count(input[i])) {
+//             rpn += input[i];
+//             continue;
+//         }
+
+//         if (input[i] == UNARY_OPERANDS) {
+// 			int brackets = 0;
+// 			for (int j = i+1 ;j<input.length();j++) 
+// 			{
+// 				if (input[j] == OPEN_BRACKET)
+// 					brackets++;
+// 				else break;
+// 			}
+// 			unary.push_back(brackets);
+// 			continue;
+// 		}
+//         if (BINARY_OPERANDS.count(input[i])) {
+//             while (!ops.empty() && PRIORITY.at(input[i]) < PRIORITY.at(ops.top())) {
+//                 rpn += ops.top();
+//                 ops.pop();
+//             }
+//             ops.push(input[i]);
+//             continue;
+//         }
+
+//         if (input[i] == OPEN_BRACKET) {
+//             ops.push(input[i]);
+//             continue;
+//         }
+
+//         if (input[i] == CLOSE_BRACKET) {
+//             while (ops.top() != OPEN_BRACKET) {
+//                 rpn += ops.top();
+//                 ops.pop();
+//             }
+//             ops.pop();
+//             for (int i=0;i<unary.size();i++)
+// 			{
+// 				if (unary[i]-- == 0)
+// 				{
+// 					rpn += '!';
+// 					unary.erase(unary.begin()+i);
+// 				}
+// 			}
+//         }
+//     }
+
+//     while (!ops.empty()) {
+//         rpn += ops.top();
+//         ops.pop();
+//     }
+
+// 	if (unary.size()%2)
+// 		rpn += "!";
+//     return rpn;
+// }
 
 void TestUser()
 {	
@@ -315,11 +409,17 @@ int main()
 			
 			else
 			{
+			auto start = std::chrono::high_resolution_clock::now();
+			cout<<rpn_input;
 			int result = solve(rpn_input);
 			if (result)
 				cout << "Формула является нейтральной\n" << endl;
 			else
 				cout << "Формула НЕ является нейтральной\n" << endl;
+			auto end = std::chrono::high_resolution_clock::now();
+
+			std::chrono::duration<double> duration = end - start;
+			std::cout << "Время выполнения: " << duration.count() << " секунд\n";
 			}
 		}
 	TestUser();
