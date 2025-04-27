@@ -163,7 +163,7 @@ bool validate2(string& input) // this func checks all subformulas in the input
 				if (open_brc == 0)
 					break;
 			}
-            if ((temp.length() != input.length()) && !validate2(temp) || (!validate(temp))) // save from (((A/\B)/\(C/\D)/\(E/\F)))
+            if (!validate(temp)) // save from (((A/\B)/\(C/\D)/\(E/\F)))
                 return false;
 		}
 	}
@@ -209,7 +209,7 @@ void process_unary_after_bracket(vector<int>& unary, string& rpn) {
         if (unary[i]-- == 0) {
             rpn += '!';
             unary.erase(unary.begin()+i);
-            i--; // компенсируем удаление элемента
+            i--;
         }
     }
 }
@@ -280,19 +280,17 @@ void process_remaining_unary(vector<int>& unary, string& rpn) {
 
 string create_RPN(string& input) {
     if (!validate_input(input)) return "";
-    
     stack<char> ops;
     string rpn;
     vector<int> unary;
 
     for (int i = 0; i < input.length(); i++) {
         char c = input[i];
-        
-        if (handle_argument(c, rpn)) continue;
-        if (handle_unary_operand(c, i, input, unary)) continue;
-        if (handle_binary_operand(c, ops, rpn)) continue;
-        if (handle_open_bracket(c, ops)) continue;
-        if (handle_close_bracket(c, ops, rpn, unary)) continue;
+		handle_argument(c, rpn);
+		handle_unary_operand(c, i, input, unary);
+		handle_binary_operand(c, ops, rpn);
+		handle_open_bracket(c, ops);
+		handle_close_bracket(c, ops, rpn, unary);
     }
 
     process_remaining_operators(ops, rpn);
@@ -300,75 +298,6 @@ string create_RPN(string& input) {
     
     return rpn;
 }
-
-
-// string create_RPN(string& input)//creates a RPN from original input
-//  {
-//     if (!validate_unchanged(input)) return "";
-//     input = change(input);
-//     if (!validate2(input)) return "";
-
-//     stack<char> ops;
-//     string rpn;
-//     vector<int> unary;
-
-//     for (int i=0;i<input.length();i++) {
-//         if (ARGUMENTS.count(input[i])) {
-//             rpn += input[i];
-//             continue;
-//         }
-
-//         if (input[i] == UNARY_OPERANDS) {
-// 			int brackets = 0;
-// 			for (int j = i+1 ;j<input.length();j++) 
-// 			{
-// 				if (input[j] == OPEN_BRACKET)
-// 					brackets++;
-// 				else break;
-// 			}
-// 			unary.push_back(brackets);
-// 			continue;
-// 		}
-//         if (BINARY_OPERANDS.count(input[i])) {
-//             while (!ops.empty() && PRIORITY.at(input[i]) < PRIORITY.at(ops.top())) {
-//                 rpn += ops.top();
-//                 ops.pop();
-//             }
-//             ops.push(input[i]);
-//             continue;
-//         }
-
-//         if (input[i] == OPEN_BRACKET) {
-//             ops.push(input[i]);
-//             continue;
-//         }
-
-//         if (input[i] == CLOSE_BRACKET) {
-//             while (ops.top() != OPEN_BRACKET) {
-//                 rpn += ops.top();
-//                 ops.pop();
-//             }
-//             ops.pop();
-//             for (int i=0;i<unary.size();i++)
-// 			{
-// 				if (unary[i]-- == 0)
-// 				{
-// 					rpn += '!';
-// 					unary.erase(unary.begin()+i);
-// 				}
-// 			}
-//         }
-//     }
-
-//     while (!ops.empty()) {
-//         rpn += ops.top();
-//         ops.pop();
-//     }
-
-// 	if (unary.size()%2)
-// 		rpn += "!";
-//     return rpn;
-// }
 
 void TestUser()
 {	
@@ -409,17 +338,11 @@ int main()
 			
 			else
 			{
-			auto start = std::chrono::high_resolution_clock::now();
-			cout<<rpn_input;
 			int result = solve(rpn_input);
 			if (result)
 				cout << "Формула является нейтральной\n" << endl;
 			else
 				cout << "Формула НЕ является нейтральной\n" << endl;
-			auto end = std::chrono::high_resolution_clock::now();
-
-			std::chrono::duration<double> duration = end - start;
-			std::cout << "Время выполнения: " << duration.count() << " секунд\n";
 			}
 		}
 	TestUser();
